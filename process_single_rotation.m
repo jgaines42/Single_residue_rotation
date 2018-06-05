@@ -37,7 +37,7 @@
 
 function [] = process_single_rotation(PDB_name,what_res,resiName, save_folder, is_dipeptide)
 
-KBT = 0.001; % Chang this to make spheres squshier!
+KBT = 0.001; % Change this to make spheres squshier!
 if is_dipeptide
     sub_name = '_dipeptide';
 else

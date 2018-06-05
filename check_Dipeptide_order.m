@@ -1,10 +1,10 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% function [new_Dipeptide, correct_now, ind] = check_Dipeptide_order(residue, Resi_name)
+% function [new_residue, correct_now, ind] = check_Dipeptide_order(residue, Resi_name)
 %
-% Checks the order of dipeptide atoms and returns them in a standard order
+% Checks the order of the atoms in a peptide and returns them in a standard order
 %
 % Input: 
-%   residue: The cell array of the residue (not the Dipeptide)
+%   residue: The cell array of the residue (not the dipeptide)
 %   Resi_name: Residue name (3 letter code)
 %
 % Output: 

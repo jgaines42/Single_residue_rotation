@@ -1,22 +1,105 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% function [allDipeptide,next_pro] = isolate_dipeptide(tempModel2, all_ids, resiId)
+% function [allDipeptide,next_pro, numAtoms, DOF] = isolate_dipeptide(tempModel2, all_ids, resiId resiName)
 %
-% Isolates a dipeptide in a protein. Returns the dipeptide 
+% Isolates a dipeptide in a protein. Returns the dipeptide, number of
+% DOF and number of atoms in the dipeptide
 %
 % Input:
 %   tempModel2: cell array of the entire PDB
 %   all_ids: all residue ids of the protein
 %   resId: the residue to be isolated
+%   resiName: 3 letter abbreviation of the atom name
 %
 % Output:
 %   allDipeptide: cell array of the dipeptide
 %   next_pro: Indicates if the next residue is a Proline (which shortens
 %   the length of the dipeptide). 1 = is proline
+%
+% Notes:
+% A dipeptides is the amino acid being studied plus Calpha, C and O of the
+% prior amino acid and N, H and Calpha of the next amino acid
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
 
-function [allDipeptide,next_pro] = isolate_dipeptide(tempModel2, all_ids, resiId)
+function [allDipeptide,next_pro, numAtom, DOF] = isolate_dipeptide(tempModel2, all_ids, resiId, resiName)
+
+switch (resiName)
+    case 'Ala'
+        numAtom = 16;
+        DOF = 0;
+    case 'Ile'
+        numAtom =25;
+        DOF = 2;
+        
+    case 'Leu'
+        numAtom =25;
+        DOF = 2;
+        
+    case 'Val'
+        numAtom = 22;
+        DOF = 1;
+        
+    case 'Phe'
+        numAtom = 26;
+        DOF =2;
+        
+    case 'Trp'
+        numAtom = 30;
+        DOF = 2;
+    case 'Tyr'
+        numAtom = 27;
+        DOF = 2;
+    case 'Asn'
+        fprintf('Not yet supported\n' );
+        DOF = 0;
+    case 'Cys'
+        DOF = 1;
+        numAtom = 17;
+        
+    case 'Glu'
+        DOF = 3;
+        numAtom = 21;
+        DOF = 0;
+    case 'Met'
+        numAtom = 23;
+        DOF = 3;
+        
+    case 'Ser'
+        numAtom = 17;
+        DOF = 1;
+    case 'Thr'
+        numAtom = 20;
+        DOF = 1;
+    case 'Asp'
+        numAtom = 18;
+        DOF = 2;
+        DOF = 0;
+        
+    case 'Gln'
+        fprintf('Not yet supported\n' );
+        DOF = 0;
+    case 'Arg'
+        fprintf('Not yet supported\n' );
+        DOF = 0;
+    case 'His'
+        numAtom = 22;
+        DOF = 2;
+    case 'Lys'
+        numAtom = 28;
+        DOF = 4;
+        DOF = 0;
+    case 'Gly'
+        DOF = 0;
+        fprintf('Not yet supported\n' );
+    case 'Pro'
+        fprintf('Not yet supported\n' );
+        DOF = 0;
+    otherwise
+        fprintf('Invalid amino acid\n' );
+        DOF = 0;
+end
+
 
 ind0=ismembc(all_ids,resiId);
 tempAllIle = tempModel2(ind0, :);

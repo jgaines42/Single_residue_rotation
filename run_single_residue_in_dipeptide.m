@@ -1,11 +1,11 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% function [] = run_single_residue_in_dipeptide(PDB_name1, which_res,folder_name)
+% function [] = run_single_residue_in_dipeptide(PDB_name1, which_res,folder_name, save_folder)
 % Performs rotations on a single residue. Save the lowest energy state of
-% 100 differen bond length and angle variants
+% 300 differen bond length and angle variants
 %
 % Input:
 %   PDB_name1: the name of the PDB to be run. Should be saved as
-%       XXXX.mat where PDB_name1 = XXXX
+%       XXXX_H.pdb or XXXX.mat where PDB_name1 = XXXX
 %   which_res: the residue ID
 %   folder_name: The full path name to the folder containing the PDB file.
 %   save_folder: Folder to save results to
@@ -15,10 +15,10 @@
 %   X_single_rotation_minE.mat: lowest energy state(s) for each ba/bl
 %       variant
 %       column 1: variant
-%       column 2: minimum energy
-%       column 3-n: chi values at that energy
+%       column 2 to (n-1): chi values at minimum energy
+%       column n: minimum energy
 %   X_all_dchi_values.mat: The dchi values for samplings of the lowest
-%   energy values found (see README for algorithm details
+%   energy values found (see README for algorithm details)
 % Notes:
 % Protein must be saved in file XXXX_H.pdb created
 % using download_preprocess_pdb.py which also adds the hydrogen atoms to the protein
@@ -66,84 +66,9 @@ resiName = tempModel2{ind0(1),4}; %Get name of amino acid
 resiName(2:3) = lower(resiName(2:3));
 resiId = double(which_res);
 
-switch (resiName)
-    case 'Ala'
-        numAtom = 16;
-        DOF = 0;
-    case 'Ile'
-        numAtom =25;
-        DOF = 2;
-        
-    case 'Leu'
-        numAtom =25;
-        DOF = 2;
-        
-    case 'Val'
-        numAtom = 22;
-        DOF = 1;
-        
-    case 'Phe'
-        numAtom = 26;
-        DOF =2;
-        
-    case 'Trp'
-        numAtom = 30;
-        DOF = 2;
-    case 'Tyr'
-        numAtom = 27;
-        DOF = 2;
-    case 'Asn'
-        fprintf('Not yet supported\n' );
-        DOF = 0;
-    case 'Cys'
-        DOF = 1;
-        numAtom = 17;
-        
-    case 'Glu'
-        DOF = 3;
-        numAtom = 21;
-        DOF = 0;
-    case 'Met'
-        numAtom = 23;
-        DOF = 3;
-        
-    case 'Ser'
-        numAtom = 17;
-        DOF = 1;
-    case 'Thr'
-        numAtom = 20;
-        DOF = 1;
-    case 'Asp'
-        numAtom = 18;
-        DOF = 2;
-        DOF = 0;
-        
-    case 'Gln'
-        fprintf('Not yet supported\n' );
-        DOF = 0;
-    case 'Arg'
-        fprintf('Not yet supported\n' );
-        DOF = 0;
-    case 'His'
-        numAtom = 22;
-        DOF = 2;
-    case 'Lys'
-        numAtom = 28;
-        DOF = 4;
-        DOF = 0;
-    case 'Gly'
-        DOF = 0;
-        fprintf('Not yet supported\n' );
-    case 'Pro'
-        fprintf('Not yet supported\n' );
-        DOF = 0;
-    otherwise
-        fprintf('Invalid amino acid\n' );
-        DOF = 0;
-end
 
 %Isolate dipeptide
-[allDipeptide,next_pro] = isolate_dipeptide(tempModel2, res_ids, resiId);
+[allDipeptide,next_pro, numAtom, DOF] = isolate_dipeptide(tempModel2, res_ids, resiId, resiName);
 
 % Make sure the full resiue was present
 if DOF >0 && (size(allDipeptide,1) == numAtom || (size(allDipeptide,1) == numAtom-1 && next_pro ==1))
@@ -166,62 +91,66 @@ if DOF >0 && (size(allDipeptide,1) == numAtom || (size(allDipeptide,1) == numAto
     %If the correct atom ordering was possible
     if correct_now == 1
         
-        %% Get original chi and energy
-        orig = [];
-        
-        res_name = resiName;
-        switch_residue_setup;
-        set_up_clashArrays_dipeptide;
-        total_energy = 0;
-        if DOF >= 1
-            orig = [InitChi1];
-            [chi1_energy] = get_energy_wProtein(c1_Clash, Position,  [], []);
-            total_energy = total_energy +chi1_energy;
-            
-            if DOF >= 2
-                orig = [InitChi1, InitChi2];
-                [chi2_energy] = get_energy_wProtein(c2_Clash, Position,  [], []);
-                total_energy = total_energy + chi2_energy;
-            end
-            if DOF >= 3
-                orig = [InitChi1, InitChi2, InitChi3];
-                [chi3_energy] = get_energy_wProtein(c3_Clash, Position,  [], []);
-                total_energy = total_energy + chi3_energy;
-            end
-        end
-        if CH3 == 2
-            [HG2_energy] = get_energy_wProtein(HG2_Clash, Position,  [], []);
-            total_energy = total_energy + HG2_energy;
-        end
-        if CH3 >=1
-            [HG1_energy] = get_energy_wProtein(HG1_Clash, Position,  [], []);
-            total_energy = total_energy + HG1_energy;
-        end
-        if OH ==1
-            [OH_energy] = get_energy_wProtein(OH_Clash, Position,  [],[]);
-            total_energy = total_energy + OH_energy;
+        %% Finish setup and get original chi and energy
+         Amino_acid = switch_residue_setup(resiName);
+        [Init_dihedrals, Clash_lists] = set_up_clashArrays_dipeptide( resiName,next_pro,Atom_sizes, Amino_acid, Position);
+        [total_energy] = get_energy_of_dipeptide(Clash_lists, Position, Amino_acid.DOF, Amino_acid.CH3, Amino_acid.OH);
+        if DOF == 1
+            orig = [Init_dihedrals.InitChi1];
+        elseif DOF == 2
+            orig = [Init_dihedrals.InitChi1,Init_dihedrals.InitChi2];
+        elseif DOF == 3
+            orig = [Init_dihedrals.InitChi1,Init_dihedrals.InitChi2,Init_dihedrals.InitChi3];
         end
         save(strcat(save_folder, PDB_name1, '_', resiName, num2str(resiId), '_original_energy.mat'),'total_energy')
         save(strcat(save_folder, PDB_name1, '_', resiName, num2str(resiId), '_original.mat'), 'orig')
         
-        %%
-        temp_rest = cell(1,15);
+        %% Get bond length and angle variants
+
+        temp_rest = cell(1,15); % this line and the next allows get_1000 to work for the dipeptide model
         temp_rest(1,8:10) = num2cell([0 0 0]);
-        %Get bond length and angle variants
-        [Position_100, rest_of_pro, total_found] = get_1000(allDipeptide, resiName,temp_rest, next_pro);
+        [Position_100, ~, total_found] = get_1000(allDipeptide, resiName,temp_rest, next_pro, Amino_acid);
+        
+        %% If we were able to get the 300 variants we need, keep runing
         if total_found >= 300
             all_data = [];
             
             %Run 300 variants
             for variations = 1:300
-                Position = Position_100(:,(variations-1)*3 + 1: variations*3);
+                Position = Position_100(:,(variations-1)*3 + 1: variations*3); %Extract variant
+                energy = 100;   %Set initial energy to be high
                 
-                energy = 100;
-                
+                % Calculate new initial dihedral angles
+                if DOF == 3
+                    InitChi3=calcDA2( Amino_acid.iChi3Array,Position); %%%%%%%%
+                    Init_dihedrals.InitChi3=mod(real(InitChi3),360);
+                end
+                if DOF >= 2
+                    
+                    InitChi2=calcDA2( Amino_acid.iChi2Array,Position); %%%%%%%%
+                    Init_dihedrals.InitChi2=mod(real(InitChi2),360);
+                end
+                if DOF >= 1
+                    InitChi1=calcDA2( Amino_acid.iChi1Array,Position);
+                    Init_dihedrals.InitChi1=mod(real(InitChi1),360);
+                end
+                if Amino_acid.CH3 == 2
+                    InitChi_HG2=calcDA2( Amino_acid.HG_Array_2,Position);
+                    Init_dihedrals.InitChi_HG2=mod(real(InitChi_HG2),360);
+                end
+                if Amino_acid.CH3 >= 1
+                    InitChi_HG1=calcDA2( Amino_acid.HG_Array_1,Position);
+                    Init_dihedrals.InitChi_HG1=mod(real(InitChi_HG1),360);
+                end
+                if Amino_acid.OH == 1
+                    InitOH=calcDA2( Amino_acid.iOHArray,Position); %InitChi1
+                    Init_dihedrals.InitOH=mod(real(InitOH),360);
+                end
+
                 %Set initial cutoff based off of old runs
                 if variations >1
-                    if max(all_data(:,2) >0)
-                        e_cutoff = max(all_data(:,2))/100;
+                    if max(all_data(:,DOF+2) >0)
+                        e_cutoff = max(all_data(:,DOF+2))/100;
                     else
                         e_cutoff = 10^-5;
                     end
@@ -232,7 +161,7 @@ if DOF >0 && (size(allDipeptide,1) == numAtom || (size(allDipeptide,1) == numAto
                 %Run until a lowest energy value is lower than the cutoff
                 while energy >= e_cutoff
                     e_cutoff = e_cutoff *10;
-                    [energy, dihedrals] = Find_lowest_energy_1Residue_varyBABL_dipeptide(Position, resiName, Atom_sizes,   next_pro, e_cutoff);
+                    [energy, dihedrals] = Find_lowest_energy_1Residue_varyBABL_dipeptide(Position, e_cutoff, Clash_lists, Amino_acid, Init_dihedrals);
                 end
                 if energy < e_cutoff
                     all_data = [all_data; repmat([variations],size(dihedrals,1),1) dihedrals,repmat([ energy],size(dihedrals,1),1)];
@@ -243,6 +172,8 @@ if DOF >0 && (size(allDipeptide,1) == numAtom || (size(allDipeptide,1) == numAto
             
             %Process the data
             process_single_rotation(PDB_name1,resiId,resiName, save_folder, 1);
+        else
+            error('Did not find enough variants')
         end
     else
         error('Atoms are not labeled correctly')

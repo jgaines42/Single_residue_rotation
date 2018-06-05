@@ -1,9 +1,24 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% function tempModel2 = add_sizes_protein(tempModel2,size_number)
+%
+% Adds radii to all atoms in the protein, stores in column 12
+% 
+% Input:
+% tempModel2: The protein structure
+% size_number: Which interation of atom sizes to use
+%
+% Returns:
+% tempModel2 with sizes stored in column 12
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+
 function tempModel2 = add_sizes_protein(tempModel2,size_number)
 
  tempModel2(:,12) = {0};
  
 % Order of atoms:
-% 1     2   3  4    5       6       7   8  9      10    11    12     13     14          15    16 
+% 1     2   3  4    5       6       7   8  9      10    11    12      13     14         15    16 
 % H_C, H_N, N, O, C(sp3), C(sp2), O(H), S, H_S, C(Ar), H(Ar), O(Ar),  C(NO), O(CNO),  C(OH), H_O 
 if size_number == 6
     radii_array = [1.1 1.1 1.3 1.4 1.5 1.3 1.4 1.75 1.1 1.50 1.1 1.4 1.3 1.4 1.5 1.1 1.3 1.3];

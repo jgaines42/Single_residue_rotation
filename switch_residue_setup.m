@@ -1,3 +1,45 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% function [Amino_acid] = switch_residue_setup(res_name)
+%
+% Initializes a bunch of variables relating to dihedral angles
+%
+% Input:
+% res_name: 3 letter abbreviation of the amino acid
+% 
+% Output:
+% Amino_acid structure which contains the following units
+% -iChi1Array,iChi2Array,iChi3Array, iChi4Array, HG_Array_1, HG_Array_2,
+% iOHArray: These arrays list the 4 atoms of the dipeptide that are
+% involved in the given dihedral angles
+% -moveAtomID2, moveAtomID1, moveAtomID3, moveAtomID4, moveAtomID_HG1,
+% moveAtomID_HG2, moveAtomOH: atom indexes for the atoms that move when the
+% given dihedral is rotated
+% DOF: number of regular side chain dihedral angles
+% CH3: number of CH3 groups
+% OH: number of OH groups
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+function [Amino_acid] = switch_residue_setup(res_name)
+
+%Initialize some of variables (just the parts that might not
+%exist for all amino acids
+iChi1Array = [];
+moveAtomID2 = [];
+iChi2Array = [];
+moveAtomID = [];
+iChi3Array = [];
+moveAtomID3 = [];
+moveAtomID4 = [];
+iChi4Array = [];
+moveAtomID_HG2  = [];
+moveAtomID_HG1 = [];
+moveAtomOH = [];
+HG_Array_1 = [];
+HG_Array_2 = [];
+iOHArray = [];
+
+
 switch(res_name)
     case 'Ala'
         
@@ -238,4 +280,26 @@ switch(res_name)
         fprintf('Not yet supported\n' );
     otherwise
         fprintf('Invalid amino acid\n' );
+end
+
+%Add all variables to Amino_Acid
+Amino_acid.iChi1Array = iChi1Array;
+Amino_acid.moveAtomID2 = moveAtomID2;
+Amino_acid.iChi2Array = iChi2Array;
+Amino_acid.moveAtomID = moveAtomID;
+Amino_acid.iChi3Array = iChi3Array;
+Amino_acid.moveAtomID3 = moveAtomID3;
+Amino_acid.moveAtomID4 = moveAtomID4;
+Amino_acid.iChi4Array = iChi4Array;
+Amino_acid.moveAtomID_HG2  = moveAtomID_HG2;
+Amino_acid.moveAtomID_HG1 = moveAtomID_HG1;
+Amino_acid.moveAtomOH = moveAtomOH;
+Amino_acid.HG_Array_1 = HG_Array_1;
+Amino_acid.HG_Array_2 = HG_Array_2;
+Amino_acid.iOHArray = iOHArray;
+Amino_acid.numAtom = numAtom;
+Amino_acid.CH3 = CH3;
+Amino_acid.OH = OH;
+Amino_acid.DOF = DOF;
+
 end

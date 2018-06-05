@@ -1,5 +1,5 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% function [min_energy,dihedrals] = Find_lowest_energy_1Residue_varyBABL(Position, res_name, Atom_sizes, rest_of_pro, next_pro, energy_cutoff)
+% function [min_energy,dihedrals] = Find_lowest_energy_1Residue_varyBABL(Position, next_pro, energy_cutoff, Amino_Acid, Init_dihedrals)
 %
 % Rotates a residue and finds the lowest energy state. Returns a list of all
 % dihedral angles with that energy
@@ -10,42 +10,86 @@
 %   Atom_sizes: Atom sizes of the dipeptide atoms
 %   next_pro: 1 if next residue is a proline
 %   energy_cutoff: cutoff for energy search, finds minimum energy below
-%   this
+%   this value
+%   Amino_Acid: Structure of data related to the amino acid
+%   Init_dihedrals: Structure of initial dihedral angle values of the amino
+%   acid
 %
 % Output:
 %   min_energy: Lowest energy of the residue
 %   dihedrals: All dihedral angles with that energy
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-function [min_energy,dihedrals] = Find_lowest_energy_1Residue_varyBABL_dipeptide(Position, res_name, Atom_sizes, next_pro, energy_cutoff)
+function [min_energy,dihedrals] = Find_lowest_energy_1Residue_varyBABL_dipeptide(Position, energy_cutoff, clashLists, Amino_Acid, Init_dihedrals)
 
 XtalPos = Position;
 
-%energy_cutoff = 1;
 min_energy = energy_cutoff;
 dihedrals = [];
 
-%Run setup script to get all of the variables for the particular amino acid
-switch_residue_setup;
+%Extract data from structures (cause its faster this way)
+DOF = Amino_Acid.DOF;
+CH3 = Amino_Acid.CH3;
+OH = Amino_Acid.OH;
 
-set_up_clashArrays_dipeptide;
+iChi1Array = Amino_Acid.iChi1Array;
+moveAtomID2 = Amino_Acid.moveAtomID2;
+c1_Clash = clashLists.c1_Clash;
+InitChi1 = Init_dihedrals.InitChi1;
+
+if DOF > 1
+    iChi2Array = Amino_Acid.iChi2Array;
+    moveAtomID = Amino_Acid.moveAtomID;
+    c2_Clash = clashLists.c2_Clash;
+    InitChi2 = Init_dihedrals.InitChi2;
+    if DOF > 2
+        iChi3Array = Amino_Acid.iChi3Array;
+        moveAtomID3 = Amino_Acid.moveAtomID3;
+        c3_Clash = clashLists.c3_Clash;
+        InitChi3 = Init_dihedrals.InitChi3;
+    end
+end
+if CH3 >= 1
+    HG_Array_1 = Amino_Acid.HG_Array_1;
+    moveAtomID_HG1 = Amino_Acid.moveAtomID_HG1;
+    HG1_Clash = clashLists.HG1_Clash;
+    InitChi_HG1 = Init_dihedrals.InitChi_HG1;
+    
+    if CH3 == 2
+        HG_Array_2 = Amino_Acid.HG_Array_2;
+        moveAtomID_HG2 = Amino_Acid.moveAtomID_HG2;
+        HG2_Clash = clashLists.HG2_Clash;
+        InitChi_HG2 = Init_dihedrals.InitChi_HG2;
+        
+    end
+end
+if OH == 1
+    iOHArray= Amino_Acid.iOHArray;
+    moveAtomOH = Amino_Acid.moveAtomOH;
+    OH_Clash = clashLists.OH_Clash;
+    InitOH = Init_dihedrals.InitOH;
+    
+end
 
 numAtom = size(Position,1);
 
+%% Start rotations
 subtract_array_1 = repmat(Position(iChi1Array(2),:),numAtom,1);
 delta_term_1 =  pi*sign(InitChi1)*InitChi1/180;
 
-for chi1 = 1:72
+for chi1 = 1:72 % Loop through chi1 sampling every 5 degrees
     Position=XtalPos;
     setChi1 = chi1*5;
     Position = Rotate_DA(Position, setChi1, subtract_array_1, delta_term_1, iChi1Array, moveAtomID2);
-    [chi1_energy] = get_energy_wProtein(c1_Clash, Position,  [], []);
+    chi1_energy = get_energy_wProtein(c1_Clash, Position,  [], []);
     
+    %% Only enter chi2 loop if the energy is lower than the minimum energy so far
     if DOF >=2 && chi1_energy <= min_energy
         Pos_b4_Chi2 = Position;
         subtract_array_2 = repmat(Position(iChi2Array(2),:),numAtom,1);
         delta_term_2 =  pi*sign(InitChi2)*InitChi2/180;
-        for chi2 = 1:max_Chi2
+        
+        for chi2 = 1:Init_dihedrals.max_Chi2
             Position=Pos_b4_Chi2;
             setChi2 = chi2*5;
             Position = Rotate_DA(Position, setChi2, subtract_array_2, delta_term_2, iChi2Array, moveAtomID);
@@ -53,6 +97,7 @@ for chi1 = 1:72
             
             total_energy = chi1_energy + chi2_energy;
             
+            %% Only enter chi3 loop if the energy is lower than the minimum energy so far
             if DOF >= 3 && total_energy <= min_energy
                 Pos_b4_Chi3 = Position;
                 subtract_array_3 = repmat(Position(iChi3Array(2),:),numAtom,1);
@@ -65,49 +110,21 @@ for chi1 = 1:72
                     [chi3_energy] = get_energy_wProtein(c3_Clash, Position,  [], []);
                     total_energy = chi1_energy + chi2_energy + chi3_energy;
                     
+                    %% Check for methyl group at end and rotate
                     if DOF == 3 && total_energy <= min_energy
-                        if CH3 == 1
-                            subtract_array_HG1 = repmat(Position(HG_Array_1(2),:),numAtom,1);
-                            delta_term_HG1 =  pi*sign(InitChi_HG1)*InitChi_HG1/180;
-                            min_energy_CH3  = rotate_CH3_group_1_find_lowest(Position, HG1_Clash, [], [], subtract_array_HG1, delta_term_HG1, HG_Array_1, moveAtomID_HG1);
-                            
-                            total_energy = total_energy + min_energy_CH3;
-                        end
-                        if total_energy < min_energy
-                            min_energy = total_energy;
-                            dihedrals = [setChi1, setChi2, setChi3];
-                        elseif total_energy == min_energy
-                            dihedrals = [dihedrals;setChi1, setChi2, setChi3];
-                        end
+                        this_dihedral = [setChi1, setChi2, setChi3];
+                        [dihedrals, min_energy] = check_end_groups(dihedrals, min_energy,total_energy, this_dihedral, Amino_Acid,Init_dihedrals, Position, clashLists);
                         
                     end
                 end%Chi3 loop
             end
             
+            %% Check for methyl group at end and rotate
             if DOF == 2 && total_energy <= min_energy
-                if CH3 == 1
-                    
-                    subtract_array_HG1 = repmat(Position(HG_Array_1(2),:),numAtom,1);
-                    delta_term_HG1 =  pi*sign(InitChi_HG1)*InitChi_HG1/180;
-                    min_energy_CH3  = rotate_CH3_group_1_find_lowest(Position, HG1_Clash, [], [], subtract_array_HG1, delta_term_HG1, HG_Array_1, moveAtomID_HG1);
-                    total_energy = total_energy + min_energy_CH3;
-                    
-                elseif CH3 == 2
-                    
-                    subtract_array_HG1 = repmat(Position(HG_Array_1(2),:),numAtom,1);
-                    delta_term_HG1 =  pi*sign(InitChi_HG1)*InitChi_HG1/180;
-                    delta_term_HG2 =  pi*sign(InitChi_HG2)*InitChi_HG2/180;
-
-                    min_energy_CH3 = rotate_CH3_group_2_find_lowest(Position, HG1_Clash, [], HG2_Clash, [], [], subtract_array_HG1, delta_term_HG1, HG_Array_1, moveAtomID_HG1, HG_Array_2, moveAtomID_HG2, numAtom,delta_term_HG2,min_energy, total_energy);
-                    
-                    total_energy = total_energy + min_energy_CH3;
-                end
-                if total_energy < min_energy
-                    min_energy = total_energy;
-                    dihedrals = [setChi1, setChi2];
-                elseif total_energy == min_energy
-                    dihedrals = [dihedrals;setChi1, setChi2];
-                end
+                
+                this_dihedral = [setChi1, setChi2];
+                [dihedrals, min_energy] = check_end_groups(dihedrals, min_energy,total_energy, this_dihedral, Amino_Acid,Init_dihedrals, Position, clashLists);
+                
             end
             
             
@@ -115,97 +132,12 @@ for chi1 = 1:72
         
     end
     
+    %% Check for methyl group at end and rotate
     if DOF == 1 && chi1_energy <= min_energy
         total_energy = chi1_energy;
-        if CH3 == 1 &&  OH == 0 && DOF == 1
-            
-            subtract_array_HG1 = repmat(Position(HG_Array_1(2),:),numAtom,1);
-            delta_term_HG1 =  pi*sign(InitChi_HG1)*InitChi_HG1/180;
-            min_energy_CH3  = rotate_CH3_group_1_find_lowest(Position, HG1_Clash, [], [], subtract_array_HG1, delta_term_HG1, HG_Array_1, moveAtomID_HG1);
-            
-            total_energy = chi1_energy + min_energy_CH3;
-            
-        elseif OH == 0 && DOF == 1 && CH3 == 2
-            subtract_array_HG1 = repmat(Position(HG_Array_1(2),:),numAtom,1);
-            delta_term_HG1 =  pi*sign(InitChi_HG1)*InitChi_HG1/180;
-            delta_term_HG2 =  pi*sign(InitChi_HG2)*InitChi_HG2/180;
-
-            min_energy_CH3 = rotate_CH3_group_2_find_lowest(Position, HG1_Clash, [], HG2_Clash, [], [], subtract_array_HG1, delta_term_HG1, HG_Array_1, moveAtomID_HG1, HG_Array_2, moveAtomID_HG2, numAtom,delta_term_HG2,min_energy, chi1_energy);
-            
-            total_energy = chi1_energy + min_energy_CH3;
-            
-            %%%%%%%
-        elseif DOF == 1 && OH == 1 && CH3 == 0
-            Pos_b4_OH = Position;
-            subtract_array_OH = repmat(Position(iOHArray(2),:),numAtom,1);
-            delta_term_OH =  pi*sign(InitOH)*InitOH/180;
-            min_energy_OH  = rotate_CH3_group_1_find_lowest(Position, OH_Clash, [], [], subtract_array_OH, delta_term_OH, iOHArray, moveAtomOH);
-            total_energy = chi1_energy +min_energy_OH;
-            
-        elseif   DOF == 1 && OH == 1 && CH3 == 1
-            Pos_b4_HG1 = Position;
-            subtract_array_HG1 = repmat(Position(HG_Array_1(2),:),numAtom,1);
-            delta_term_HG1 =  pi*sign(InitChi_HG1)*InitChi_HG1/180;
-            
-            
-            [HG1_energy] = get_energy_wProtein(HG1_Clash, Position,  [], []);
-            [OH_energy] = get_energy_wProtein(OH_Clash, Position,  [], []);
-            
-            min_HG1 = HG1_energy;
-            min_OH = OH_energy;
-            min_OH_HG1 = min_HG1 + min_OH;
-            
-            HG1_val = 0;
-            
-            while min_OH_HG1 > 0 && HG1_val < 72
-                HG1_val = HG1_val +1;
-                setHG1 = HG1_val*5;
-                Position=Pos_b4_HG1;
-                Position = Rotate_DA(Position, setHG1, subtract_array_HG1, delta_term_HG1, HG_Array_1, moveAtomID_HG1);
-                [HG1_energy] = get_energy_wProtein(HG1_Clash, Position,  [], []);
-                
-                
-                if HG1_energy <= min_OH_HG1
-                    Pos_b4_OH = Position;
-                    subtract_array_OH = repmat(Position(iOHArray(2),:),numAtom,1);
-                    delta_term_OH =  pi*sign(InitOH)*InitOH/180;
-                    
-                    [OH_energy] = get_energy_wProtein(OH_Clash, Position,  [], []);
-                    
-                    min_OH = OH_energy;
-                    
-                    OH_val = 0;
-                    while min_OH>0 && OH_val < 72
-                        OH_val = OH_val +1;
-                        setOH = OH_val*5;
-                        Position = Pos_b4_OH;
-                        Position = Rotate_DA(Position, setOH, subtract_array_OH, delta_term_OH, iOHArray, moveAtomOH);
-                        [temp_energy] = get_energy_wProtein(OH_Clash, Position,  [], []);
-                        if temp_energy > 0 && temp_energy < min_OH
-                            OH_energy = temp_energy;
-                            min_OH = temp_energy;
-                        end
-                        if temp_energy == 0
-                            OH_energy = 0;
-                            min_OH = 0;
-                        end
-                    end
-                    if min_OH + HG1_energy < min_OH_HG1
-                        min_OH_HG1 = min_OH + HG1_energy;
-                    end
-                end
-            end
-            total_energy = chi1_energy + min_OH_HG1;
-            
-            
-            %%%%%
-        end
-        if total_energy < min_energy
-            min_energy = total_energy;
-            dihedrals = [setChi1];
-        elseif total_energy == min_energy;
-            dihedrals = [dihedrals;setChi1];
-        end
+        this_dihedral = [setChi1];
+        [dihedrals, min_energy] = check_end_groups(dihedrals, min_energy,total_energy, this_dihedral, Amino_Acid,Init_dihedrals, Position, clashLists);
+        
         
     end
 end
