@@ -30,7 +30,7 @@ DOF = Amino_acid.DOF;
 Init_dihedrals.max_Chi2 = 0;
 
 if DOF >= 3
-    load(strcat('chi3_', res_name, '_clash.mat'));
+    load(strcat('clash_folder/chi3_', res_name, '_clash.mat'));
     c3_clashList = n;
     if next_pro == 1
         ind0 = c3_clashList(:,2) == numAtom;
@@ -57,7 +57,7 @@ if DOF >= 3
     Clash_lists.c3_Clash = c3_Clash;
 end
 if DOF >= 2
-    load(strcat('chi2_', res_name, '_clash.mat'));
+    load(strcat('clash_folder/chi2_', res_name, '_clash.mat'));
     c2_clashList = n;
     if next_pro == 1
         ind0 = (c2_clashList(:,2) == numAtom);
@@ -87,7 +87,7 @@ if DOF >= 2
     
 end
 if DOF >= 1
-    load(strcat('chi1_', res_name, '_clash.mat'));
+    load(strcat('clash_folder/chi1_', res_name, '_clash.mat'));
     c1_clashList = n;
     if next_pro == 1
         ind0 = c1_clashList(:,2) == numAtom;
@@ -113,7 +113,7 @@ if DOF >= 1
     
 end
 if CH3 == 2
-    load(strcat('HD2_', res_name, '_clash.mat'));
+    load(strcat('clash_folder/HD2_', res_name, '_clash.mat'));
     HG2_clashList = n;
     if next_pro == 1
         ind0 = HG2_clashList(:,2) == numAtom;
@@ -139,7 +139,7 @@ if CH3 == 2
     
 end
 if CH3 >=1
-    load(strcat('HD1_', res_name, '_clash.mat'));
+    load(strcat('clash_folder/HD1_', res_name, '_clash.mat'));
     HG1_clashList = n;
     if next_pro == 1
         ind0 = HG1_clashList(:,2) == numAtom;
@@ -166,9 +166,9 @@ if CH3 >=1
 end
 if OH == 1
     if res_name == 'Cys'
-        load(strcat('SH_', res_name, '_clash.mat'));
+        load(strcat('clash_folder/SH_', res_name, '_clash.mat'));
     else
-        load(strcat('OH_', res_name, '_clash.mat'));
+        load(strcat('clash_folder/OH_', res_name, '_clash.mat'));
     end
     OH_clashList = n;
     if next_pro == 1
