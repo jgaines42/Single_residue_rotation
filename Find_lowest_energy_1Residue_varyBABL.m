@@ -1,5 +1,5 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% function [min_energy,dihedrals] = Find_lowest_energy_1Residue_varyBABL(Position, next_pro, energy_cutoff, Amino_Acid, Init_dihedrals)
+% function [min_energy,dihedrals] = Find_lowest_energy_1Residue_varyBABL(Position,energy_cutoff, Amino_Acid, Init_dihedrals,rest_of_pro)
 %
 % Rotates a residue and finds the lowest energy state. Returns a list of all
 % dihedral angles with that energy
@@ -14,13 +14,15 @@
 %   Amino_Acid: Structure of data related to the amino acid
 %   Init_dihedrals: Structure of initial dihedral angle values of the amino
 %   acid
+%   rest_of_pro: coordinates of all other atoms in the protein. Is an empty
+%   array if running the dipeptide version
 %
 % Output:
 %   min_energy: Lowest energy of the residue
 %   dihedrals: All dihedral angles with that energy
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-function [min_energy,dihedrals] = Find_lowest_energy_1Residue_varyBABL_dipeptide(Position, energy_cutoff, clashLists, Amino_Acid, Init_dihedrals)
+function [min_energy,dihedrals] = Find_lowest_energy_1Residue_varyBABL(Position, energy_cutoff, clashLists, Amino_Acid, Init_dihedrals, rest_of_pro)
 
 XtalPos = Position;
 
@@ -35,6 +37,7 @@ OH = Amino_Acid.OH;
 iChi1Array = Amino_Acid.iChi1Array;
 moveAtomID2 = Amino_Acid.moveAtomID2;
 c1_Clash = clashLists.c1_Clash;
+protein_clash_c1 = clashLists.protein_clash_c1;
 InitChi1 = Init_dihedrals.InitChi1;
 
 if DOF > 1
@@ -42,11 +45,15 @@ if DOF > 1
     moveAtomID = Amino_Acid.moveAtomID;
     c2_Clash = clashLists.c2_Clash;
     InitChi2 = Init_dihedrals.InitChi2;
+    protein_clash_c2 = clashLists.protein_clash_c2;
+
     if DOF > 2
         iChi3Array = Amino_Acid.iChi3Array;
         moveAtomID3 = Amino_Acid.moveAtomID3;
         c3_Clash = clashLists.c3_Clash;
         InitChi3 = Init_dihedrals.InitChi3;
+        protein_clash_c3 = clashLists.protein_clash_c3;
+
     end
 end
 if CH3 >= 1
@@ -54,13 +61,15 @@ if CH3 >= 1
     moveAtomID_HG1 = Amino_Acid.moveAtomID_HG1;
     HG1_Clash = clashLists.HG1_Clash;
     InitChi_HG1 = Init_dihedrals.InitChi_HG1;
-    
+    protein_clash_HG1 = clashLists.protein_clash_HG1;
+
     if CH3 == 2
         HG_Array_2 = Amino_Acid.HG_Array_2;
         moveAtomID_HG2 = Amino_Acid.moveAtomID_HG2;
         HG2_Clash = clashLists.HG2_Clash;
         InitChi_HG2 = Init_dihedrals.InitChi_HG2;
-        
+        protein_clash_HG2 = clashLists.protein_clash_HG2;
+
     end
 end
 if OH == 1
@@ -68,7 +77,8 @@ if OH == 1
     moveAtomOH = Amino_Acid.moveAtomOH;
     OH_Clash = clashLists.OH_Clash;
     InitOH = Init_dihedrals.InitOH;
-    
+    protein_clash_OH = clashLists.protein_clash_OH;
+
 end
 
 numAtom = size(Position,1);
@@ -81,7 +91,7 @@ for chi1 = 1:72 % Loop through chi1 sampling every 5 degrees
     Position=XtalPos;
     setChi1 = chi1*5;
     Position = Rotate_DA(Position, setChi1, subtract_array_1, delta_term_1, iChi1Array, moveAtomID2);
-    chi1_energy = get_energy_wProtein(c1_Clash, Position,  [], []);
+    chi1_energy = get_energy_wProtein(c1_Clash, Position,  protein_clash_c1, rest_of_pro);
     
     %% Only enter chi2 loop if the energy is lower than the minimum energy so far
     if DOF >=2 && chi1_energy <= min_energy
@@ -93,7 +103,7 @@ for chi1 = 1:72 % Loop through chi1 sampling every 5 degrees
             Position=Pos_b4_Chi2;
             setChi2 = chi2*5;
             Position = Rotate_DA(Position, setChi2, subtract_array_2, delta_term_2, iChi2Array, moveAtomID);
-            [chi2_energy] = get_energy_wProtein(c2_Clash, Position,  [], []);
+            [chi2_energy] = get_energy_wProtein(c2_Clash, Position,  protein_clash_c2, rest_of_pro);
             
             total_energy = chi1_energy + chi2_energy;
             
@@ -107,13 +117,13 @@ for chi1 = 1:72 % Loop through chi1 sampling every 5 degrees
                     Position=Pos_b4_Chi3;
                     setChi3 = chi3*5;
                     Position = Rotate_DA(Position, setChi3, subtract_array_3, delta_term_3, iChi3Array, moveAtomID3);
-                    [chi3_energy] = get_energy_wProtein(c3_Clash, Position,  [], []);
+                    [chi3_energy] = get_energy_wProtein(c3_Clash, Position,  protein_clash_c3, rest_of_pro);
                     total_energy = chi1_energy + chi2_energy + chi3_energy;
                     
                     %% Check for methyl group at end and rotate
                     if DOF == 3 && total_energy <= min_energy
                         this_dihedral = [setChi1, setChi2, setChi3];
-                        [dihedrals, min_energy] = check_end_groups(dihedrals, min_energy,total_energy, this_dihedral, Amino_Acid,Init_dihedrals, Position, clashLists,[]);
+                        [dihedrals, min_energy] = check_end_groups(dihedrals, min_energy,total_energy, this_dihedral, Amino_Acid,Init_dihedrals, Position, clashLists,rest_of_pro);
                         
                     end
                 end%Chi3 loop
@@ -123,7 +133,7 @@ for chi1 = 1:72 % Loop through chi1 sampling every 5 degrees
             if DOF == 2 && total_energy <= min_energy
                 
                 this_dihedral = [setChi1, setChi2];
-                [dihedrals, min_energy] = check_end_groups(dihedrals, min_energy,total_energy, this_dihedral, Amino_Acid,Init_dihedrals, Position, clashLists,[]);
+                [dihedrals, min_energy] = check_end_groups(dihedrals, min_energy,total_energy, this_dihedral, Amino_Acid,Init_dihedrals, Position, clashLists,rest_of_pro);
                 
             end
             
@@ -136,10 +146,11 @@ for chi1 = 1:72 % Loop through chi1 sampling every 5 degrees
     if DOF == 1 && chi1_energy <= min_energy
         total_energy = chi1_energy;
         this_dihedral = [setChi1];
-        [dihedrals, min_energy] = check_end_groups(dihedrals, min_energy,total_energy, this_dihedral, Amino_Acid,Init_dihedrals, Position, clashLists);
+        [dihedrals, min_energy] = check_end_groups(dihedrals, min_energy,total_energy, this_dihedral, Amino_Acid,Init_dihedrals, Position, clashLists,rest_of_pro);
         
         
     end
 end
 
 end
+

@@ -124,4 +124,11 @@ if OH == 1
     Init_dihedrals.InitOH=mod(real(InitOH),360); 
 end
 
+Clash_lists.protein_clash_c1 = [];
+Clash_lists.protein_clash_c2 = [];
+Clash_lists.protein_clash_c3 = [];
+Clash_lists.protein_clash_HG1 = [];
+Clash_lists.protein_clash_HG2 = [];
+Clash_lists.protein_clash_OH = [];
+
 end

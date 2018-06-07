@@ -22,40 +22,46 @@
 
 function [] = run_single_residue_in_protein(PDB_name1, which_res,folder_name, save_folder)
 
-size_number = 71; %For SASA paper
+size_number = 7; %Used in add_sizes_protein().
 
-% Load PDB
-PDB_name = strcat(folder_name, lower(PDB_name1), '.mat');
-load(PDB_name);
-ind1 = strcmp(tempModel2(:,3),'B');
-tempModel2 = tempModel2(~ind1,:);
+% Load PDB.mat file if it exists, if not, create it
+if ~exist(strcat(folder_name, PDB_name1, '.mat'))
+    if ~exist(strcat(folder_name, PDB_name1, '_H.pdb'))
+        error('PDB file with hydogen atoms added must exist')
+    else
+        pdbstruct = pdbread(strcat(folder_name, PDB_name1, '_H.pdb'));
+        x = pdbstruct.Model.Atom;
+        tempModel1=struct2cell(x);
+        tempModel2=reshape(tempModel1,size(tempModel1,1),size(tempModel1,3))';
+        save(strcat(folder_name, PDB_name1,'.mat'), 'tempModel2');
+    end
+else
+    load(strcat(folder_name, PDB_name1,'.mat'));
+end
+
+%Renumber atoms to be sequential
 tempModel2(:,1) = num2cell([1:size(tempModel2,1)]);
 
-res_ids = cell2mat(tempModel2(:,6));
-
-%{
 %relabel residue ids of second chain so all > ids of 1st chain
+res_ids = cell2mat(tempModel2(:,6));
 for i = 2:size(tempModel2,1)
     if res_ids(i,1) < res_ids(i-1,1)
         res_ids(i:size(tempModel2,1),1) = res_ids(i:size(tempModel2,1),1) + 1000;
     end
 end
 tempModel2(:,6) = num2cell(res_ids);
-%}
 tempModel2(:,1) = num2cell([1:size(tempModel2,1)]);
 
 %Add sizes to everything
 tempModel2 = add_sizes_protein(tempModel2,size_number);
 sizes_all = cell2mat(tempModel2(:,12));
 
-
-energy_cutoff = 1000000000;         %Initial energy cutoff
-
 %Set up the residue
 ind0 = find(res_ids == which_res);
-resiName = tempModel2{ind0(1),4}; %Get name of interface resiude
+resiName = tempModel2{ind0(1),4}; %Get name of amino acid
 resiName(2:3) = lower(resiName(2:3));
 resiId = double(which_res);
+
 
 switch (resiName)
     case 'Ala'

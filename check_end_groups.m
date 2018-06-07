@@ -19,7 +19,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
-function [dihedrals, min_energy] = check_end_groups(dihedrals, min_energy,total_energy, this_dihedral, Amino_Acid,Init_dihedrals, Position, Clash_list)
+function [dihedrals, min_energy] = check_end_groups(dihedrals, min_energy,total_energy, this_dihedral, Amino_Acid,Init_dihedrals, Position, Clash_list,rest_of_pro)
 
 % Extract data from Structures
 CH3 = Amino_Acid.CH3;
@@ -30,7 +30,7 @@ numAtom = Amino_Acid.numAtom;
 if CH3 == 1 &&  OH == 0 % Met
     subtract_array_HG1 = repmat(Position(Amino_Acid.HG_Array_1(2),:),numAtom,1);
     delta_term_HG1 =  pi*sign(Init_dihedrals.InitChi_HG1)*Init_dihedrals.InitChi_HG1/180;
-    min_energy_CH3  = rotate_CH3_group_1_find_lowest(Position, Clash_list.HG1_Clash, [], [], subtract_array_HG1, delta_term_HG1, Amino_Acid.HG_Array_1, Amino_Acid.moveAtomID_HG1);   
+    min_energy_CH3  = rotate_CH3_group_1_find_lowest(Position, Clash_list.HG1_Clash, Clash_list.protein_clash_HG1, rest_of_pro, subtract_array_HG1, delta_term_HG1, Amino_Acid.HG_Array_1, Amino_Acid.moveAtomID_HG1);   
     total_energy = total_energy + min_energy_CH3;
 
 elseif CH3 == 2 &&  OH == 0 % Val, Ile, Leu, 
@@ -38,14 +38,14 @@ elseif CH3 == 2 &&  OH == 0 % Val, Ile, Leu,
     subtract_array_HG1 = repmat(Position(Amino_Acid.HG_Array_1(2),:),numAtom,1);
     delta_term_HG1 =  pi*sign(Init_dihedrals.InitChi_HG1)*Init_dihedrals.InitChi_HG1/180;
     delta_term_HG2 =  pi*sign(Init_dihedrals.InitChi_HG2)*Init_dihedrals.InitChi_HG2/180;
-    min_energy_CH3 = rotate_CH3_group_2_find_lowest(Position, Clash_list.HG1_Clash, [], Clash_list.HG2_Clash, [], [], subtract_array_HG1, delta_term_HG1, Amino_Acid.HG_Array_1, Amino_Acid.moveAtomID_HG1, Amino_Acid.HG_Array_2, Amino_Acid.moveAtomID_HG2, numAtom,delta_term_HG2,min_energy, total_energy);
+    min_energy_CH3 = rotate_CH3_group_2_find_lowest(Position, Clash_list.HG1_Clash, Clash_list.protein_clash_HG1, Clash_list.HG2_Clash, Clash_list.protein_clash_HG2, rest_of_pro, subtract_array_HG1, delta_term_HG1, Amino_Acid.HG_Array_1, Amino_Acid.moveAtomID_HG1, Amino_Acid.HG_Array_2, Amino_Acid.moveAtomID_HG2, numAtom,delta_term_HG2,min_energy, total_energy);
     total_energy = total_energy + min_energy_CH3;
 
 elseif CH3 == 0 && OH == 1 %Ser, Tyr
     Pos_b4_OH = Position;
     subtract_array_OH = repmat(Position(Amino_Acid.iOHArray(2),:),numAtom,1);
     delta_term_OH =  pi*sign(Init_dihedrals.InitOH)*Init_dihedrals.InitOH/180;
-    min_energy_OH  = rotate_CH3_group_1_find_lowest(Position, Clash_list.OH_Clash, [], [], subtract_array_OH, delta_term_OH, Amino_Acid.iOHArray, Amino_Acid.moveAtomOH);
+    min_energy_OH  = rotate_CH3_group_1_find_lowest(Position, Clash_list.OH_Clash, Clash_list.protein_clash_OH, rest_of_pro, subtract_array_OH, delta_term_OH, Amino_Acid.iOHArray, Amino_Acid.moveAtomOH);
     total_energy = total_energy + min_energy_OH;
     
 elseif CH3 == 1 && OH == 1 % Thr
@@ -54,7 +54,7 @@ elseif CH3 == 1 && OH == 1 % Thr
     subtract_array_HG1 = repmat(Position(Amino_Acid.HG_Array_1(2),:),numAtom,1);
     delta_term_HG1 =  pi*sign(Init_dihedrals.InitChi_HG1)*Init_dihedrals.InitChi_HG1/180;   
     delta_term_OH = pi*sign(Init_dihedrals.InitOH)*Init_dihedrals.InitOH/180;
-    min_energy_1 = rotate_CH3_group_2_find_lowest(Position, Clash_list.HG1_Clash, [], Clash_list.OH_Clash, [], [], subtract_array_HG1, delta_term_HG1, Amino_Acid.HG_Array_1, Amino_Acid.moveAtomID_HG1, Amino_Acid.iOHArray, Amino_Acid.moveAtomOH, numAtom,delta_term_OH,min_energy, total_energy);
+    min_energy_1 = rotate_CH3_group_2_find_lowest(Position, Clash_list.HG1_Clash, Clash_list.protein_clash_HG1, Clash_list.OH_Clash, Clash_list.protein_clash_OH, rest_of_pro, subtract_array_HG1, delta_term_HG1, Amino_Acid.HG_Array_1, Amino_Acid.moveAtomID_HG1, Amino_Acid.iOHArray, Amino_Acid.moveAtomOH, numAtom,delta_term_OH,min_energy, total_energy);
     total_energy = total_energy + min_energy_1;
     
     
