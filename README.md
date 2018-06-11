@@ -14,7 +14,7 @@ is_dipeptide: 1 to run just the dipeptide, 0 to run in context of the protein
 Create PDB file with hydrogens by using download_preprocess_pdb.py which also adds the hydrogen atoms to the protein\
 Final results are stored in \*protein_single_rotation_minE.mat or \*dipeptide_single_rotation_minE.mat
 
-## Citation:
+## Citations:
 **reduce (used to add hydrogens):** Word, et al.(1999) "Asparagine and glutamine: using hydrogen atom contacts in the choice of sidechain amide orientation" J. Mol. Biol. 285, 1735-1747.\
 **Single residue rotation:** J. C. Gaines, A. Virrueta, D. A. Buch, S. J. Fleishman, C. S. O'Hern, and L. Regan, "Collective repacking reveals that the structures of protein cores are uniquely specified by steric repulsive interactions," Protein Eng. Des. Sel. 30 (2017) 387.\
 **Processing code:** J. C. Gaines, S. Acebes, A. Virrueta, M. Butler, L. Regan, and C. S. O'Hern, "Comparing side chain packing in soluble proteins, protein-protein interfaces, and transmembrane proteins," Proteins: Structure, Function, and Bioinformatics 86 (2018) 581. \
